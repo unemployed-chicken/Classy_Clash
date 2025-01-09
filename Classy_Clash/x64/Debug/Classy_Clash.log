@@ -1,4 +1,10 @@
 ﻿  Classy_Clash.cpp
+C:\Users\jwcla\OneDrive - Clap Nation\Documents\Businesses\Unemployed Chicken\CPP-Prac\Classy_Clash\Classy_Clash.cpp(21,34): warning C4305: 'initializing': truncation from 'double' to 'const float'
+C:\Users\jwcla\OneDrive - Clap Nation\Documents\Businesses\Unemployed Chicken\CPP-Prac\Classy_Clash\Classy_Clash.cpp(35,52): warning C4244: 'return': conversion from 'int' to 'float', possible loss of data
+C:\Users\jwcla\OneDrive - Clap Nation\Documents\Businesses\Unemployed Chicken\CPP-Prac\Classy_Clash\Classy_Clash.cpp(49,62): warning C4838: conversion from 'int' to 'float' requires a narrowing conversion
+C:\Users\jwcla\OneDrive - Clap Nation\Documents\Businesses\Unemployed Chicken\CPP-Prac\Classy_Clash\Classy_Clash.cpp(49,62): warning C4244: 'initializing': conversion from 'int' to 'float', possible loss of data
+C:\Users\jwcla\OneDrive - Clap Nation\Documents\Businesses\Unemployed Chicken\CPP-Prac\Classy_Clash\Classy_Clash.cpp(49,130): warning C4838: conversion from 'int' to 'float' requires a narrowing conversion
+C:\Users\jwcla\OneDrive - Clap Nation\Documents\Businesses\Unemployed Chicken\CPP-Prac\Classy_Clash\Classy_Clash.cpp(49,130): warning C4244: 'initializing': conversion from 'int' to 'float', possible loss of data
   Classy_Clash.vcxproj -> C:\Users\jwcla\OneDrive - Clap Nation\Documents\Businesses\Unemployed Chicken\CPP-Prac\Classy_Clash\x64\Debug\Classy_Clash.exe
   'pwsh.exe' is not recognized as an internal or external command,
   operable program or batch file.
