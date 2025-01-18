@@ -2,86 +2,57 @@
 //
 
 #include <iostream>
+#include <map>
 #include "raylib.h"
 #include "raymath.h"
+#include "Knight.h"
+#include "Enemy.h"
+#include "Prop.h"
+#include "Map.h"
+#include "Controller.h"
+using std::string;
+using std::map;
 
 // Window Properties 
 const int window_dimensions[2]{ 384 , 384 }; // Width * Height
 const int targetFps{ 60 };
+const bool debugging{ true };
+float world_scale{ 4.0 };
 
-void drawAllBackgrounds(const Texture2D map);
+map<string, Texture2D> generateTextures();
+void unloadAllTextures(map<string, Texture2D> textures);
 
-class Character {
-    Texture2D Idle_Texture;
-    Texture2D Run_Texture;
-    Texture2D Active_Texture;
-    Vector2 Sprit_Position;
+// Debug Only
+void displayCoordinates(Vector2 map, Knight knight, Enemy goblin);
 
-    float run_time{};
-    const float update_time{ 1.0 / 12.0 };
-    int frame{};
-    float left_right{ 1.0f };
+/* Map Bounderies: 
+    Left: -162.5 
+    Bottom: -1714.5
+    Right: - 1841.5
+    Top: -128.5
+*/
 
-public:
-    float getRunTime() { return run_time; }
-    void increaseRunTime(const float dT) { run_time += dT; };
-    float getUpdateTime() { return update_time; }
-    int getFrame() { return frame; }
-    float getLeftRight() { return left_right; }
-    void setLeftRight(float i) { left_right = i; }
-    float getSpritePositionX() { return Sprit_Position.x; }
-    float getSpritePositionY() { return Sprit_Position.y; }
-    float getSpriteWidth() { return ( Active_Texture.width / 6.0f); }
-    float getSpriteHeight() { return Active_Texture.height; }
-    void setPosition(Vector2 pos) { Sprit_Position = pos; }
-    void isMoving(const bool isMoving) { isMoving ? Active_Texture = Run_Texture : Active_Texture = Idle_Texture; }
-    Texture2D getActiveTexture() { return Active_Texture; }
-    
-    void animateCharacter(const float dT) {
-        run_time += dT;
-        if (run_time >= update_time) {
-            run_time = 0.0;
-            ++frame;
-        }
-    }
 
-    void drawCharacter() {
-        Rectangle source{ (frame % 6) * Active_Texture.width / 6, .0f, (left_right * Active_Texture.width / 6.0f), Active_Texture.height }; // correct
-        Rectangle dest{ Sprit_Position.x, Sprit_Position.y, 4.0f * Active_Texture.width / 6.0f, 4.0f * Active_Texture.height };
-        DrawTexturePro(Active_Texture, source, dest, Vector2{}, 0.0, WHITE);
-    }
-
-    Character(Texture2D idle_texture, Texture2D run_texture) {
-        Idle_Texture = idle_texture;
-        Run_Texture = run_texture;
-        Active_Texture = idle_texture;
-        
-        Sprit_Position = Vector2 {
-            (window_dimensions[0] * .5f) - 4.0f * (.5f * Active_Texture.width / 6.f),
-            (window_dimensions[1] * .5f) - 4.0f * (.5f * Active_Texture.height)
-        };
-    }
-};
 
 int main()
 {
     InitWindow(window_dimensions[0], window_dimensions[1], "Classy Clash");
     SetTargetFPS(targetFps);
 
+    Vector2 map_pos{ };
+    map<string, Texture2D> textures = generateTextures();
     // Background Textures
-    Texture2D island_map = LoadTexture("nature_tileset\\world_map.png");
-    Vector2 map_pos{ 0.0, 0.0 };
-    float speed{ 4.0 };
-
+    Map world_map{ textures }; // WARNING: This will create a new texture if key does not exist
+    
     // Create Character:
-    Texture2D knight_idle = LoadTexture("characters\\knight_idle_spritesheet.png");
-    Texture2D knight_run = LoadTexture("characters\\knight_run_spritesheet.png");
-    Character knight_char = Character(knight_idle, knight_run);
+    Knight knight = Knight(textures["knight_idle"], textures["knight_run"], window_dimensions[0], window_dimensions[1]);
 
     // Create Goblin: 
-    Texture2D goblin_idle = LoadTexture("characters\\goblin_idle_spritesheet.png");
-    Texture2D goblin_run = LoadTexture("characters\\goblin_run_spritesheet.png");
-    Character goblin_char = Character(goblin_idle, goblin_run);
+    Enemy goblin = Enemy(textures["goblin_idle"], textures["goblin_run"], 400, 500, 3.0f);
+    goblin.setTarget(&knight);
+
+    // Create Contorller:
+    Controller controller;
 
     while (!WindowShouldClose()) {
         // Time since last frame
@@ -90,49 +61,101 @@ int main()
         BeginDrawing();
         ClearBackground(WHITE);
 
-        Vector2 direction{};
-
-        if (IsKeyDown(KEY_LEFT)) { direction.x -= 1.0; }
-        if (IsKeyDown(KEY_RIGHT)) { direction.x += 1.0; }
-        if (IsKeyDown(KEY_UP)) { direction.y -= 1.0; }
-        if (IsKeyDown(KEY_DOWN)) { direction.y += 1.0; }
-        if (Vector2Length(direction) != 0.0) {
-            // Set mapPos = map_pos - direction
-            map_pos = Vector2Subtract(map_pos, Vector2Scale(Vector2Normalize(direction), speed));
-            direction.x < 0.f ? knight_char.setLeftRight(-1.0) : knight_char.setLeftRight(1.0);
-            knight_char.isMoving(true);
-        }
-        else {
-            knight_char.isMoving(false);
-        }
+        controller.checkUserInput(knight, world_map);
+        map_pos = Vector2Scale(knight.getWorldPos(), -1.f);
 
         // Update Animation Frame
-        knight_char.animateCharacter(dT);
-        goblin_char.animateCharacter(dT);
+        knight.animateCharacter(dT);
 
-        // To be refactored
-        // drawAllBackgrounds(island_map);
-        DrawTextureEx(island_map, map_pos, 0, 4.0, WHITE);
+        // Draw Map
+        DrawTextureEx(world_map.getTexture(), map_pos, 0, world_scale, WHITE);
+
+        // Draw Prop
+        world_map.renderAllProps(knight.getWorldPos());
+
+        // Move and Draw Goblin
+        controller.moveAiCharacter(goblin, world_map, dT);
         
         // Draw Character
-        knight_char.drawCharacter();
+        knight.drawCharacter();
 
-        // Draw Goblin
-        goblin_char.drawCharacter();
-
-
+        if (debugging) {
+            displayCoordinates(map_pos, knight, goblin);
+        }
+        
 
         EndDrawing();
     }
 
-    UnloadTexture(island_map);
-    UnloadTexture(knight_idle);
-    UnloadTexture(knight_run);
+    unloadAllTextures(textures);
+
     CloseWindow();
 }
 
+map<string, Texture2D> generateTextures() {
+    map<string, Texture2D> textures{
+        {"knight_idle", LoadTexture("characters\\knight_idle_spritesheet.png")},
+        {"knight_run", LoadTexture("characters\\knight_run_spritesheet.png")},
+        {"goblin_idle", LoadTexture("characters\\goblin_idle_spritesheet.png")},
+        {"goblin_run", LoadTexture("characters\\goblin_run_spritesheet.png")},
+        {"island_map", LoadTexture("nature_tileset\\world_map.png")},
+        {"stump", LoadTexture("nature_tileset\\stump.png")},
+        {"tree", LoadTexture("nature_tileset\\tree.png")},
+        {"sign", LoadTexture("nature_tileset\\Sign.png")},
+        {"challice", LoadTexture("nature_tileset\\challice.png")},
+        {"bush", LoadTexture("nature_tileset\\Bush.png")},
+        {"pond",  LoadTexture("nature_tileset\\pond.png")}
+    };
 
-void drawAllBackgrounds(const Texture2D map) {
-    Vector2 map_vect{ 0.0, 0.0 };
-    DrawTextureEx(map, map_vect, 0, 4.0, WHITE);
+    return textures;
+}
+
+
+void unloadAllTextures(map<string, Texture2D> textures) {
+    for (auto itr = textures.begin(); itr != textures.end(); itr++) {
+        UnloadTexture((*itr).second);
+    }
+}
+
+void displayCoordinates(Vector2 map, Knight knight, Enemy goblin) {
+    char XbaseString[] = "Map X: ";
+    char xCoor[50];
+    sprintf_s(xCoor, "%s%f", XbaseString, map.x);
+    DrawText(xCoor, 25, 25, 25, WHITE);
+
+
+    char YbaseString[] = "Map Y: ";
+    char yCoor[50];
+    sprintf_s(yCoor, "%s%f", YbaseString, map.y);
+    DrawText(yCoor, 25, 50, 25, WHITE);
+
+    char knightXCoorBase[] = "Knight X: ";
+    char knightXCoor[50];
+    sprintf_s(knightXCoor, "%s%f", knightXCoorBase, knight.getWorldPositionX());
+    DrawText(knightXCoor, 25, 75, 25, WHITE);
+
+    char knightYCoorBase[] = "Knight Y: ";
+    char knightYCoor[50];
+    sprintf_s(knightYCoor, "%s%f", knightYCoorBase, knight.getWorldPositionY());
+    DrawText(knightYCoor, 25, 100, 25, WHITE);
+
+    char goblinScreenPosXBase[] = "Goblin X: ";
+    char goblinScreenX[50];
+    sprintf_s(goblinScreenX, "%s%f", goblinScreenPosXBase, goblin.getWorldPositionX());
+    DrawText(goblinScreenX, 25, 125, 25, WHITE);
+
+    char goblinScreenPosYBase[] = "Goblin Y: ";
+    char goblinScreenY[50];
+    sprintf_s(goblinScreenY, "%s%f", goblinScreenPosYBase, goblin.getWorldPositionY());
+    DrawText(goblinScreenY, 25, 150, 25, WHITE);
+
+    //char goblinScreenPosXBase[] = "Goblin Screen X: ";
+    //char goblinScreenX[50];
+    //sprintf_s(goblinScreenX, "%s%f", goblinScreenPosXBase, goblin.getScreenPos().x);
+    //DrawText(goblinScreenX, 25, 125, 25, WHITE);
+
+    //char goblinScreenPosYBase[] = "Goblin Screen Y: ";
+    //char goblinScreenY[50];
+    //sprintf_s(goblinScreenY, "%s%f", goblinScreenPosYBase, goblin.getScreenPos().y);
+    //DrawText(goblinScreenY, 25, 150, 25, WHITE);
 }
