@@ -1,9 +1,12 @@
 #pragma once
 #include "raylib.h"
 #include "Prop.h"
+#include "Enemy.h"
+#include <list>
 #include <string>
 #include <vector>
 #include <map>
+using std::list;
 using std::map;
 using std::string;
 using std::vector;
@@ -12,7 +15,6 @@ constexpr float x_boundry{ 162.5 };
 constexpr float y_boundry{ 128.5 };
 constexpr float map_width{ 1679.0 };
 constexpr float map_height{ 1586.0 };
-
 
 class Map {
 	Texture2D Texture;

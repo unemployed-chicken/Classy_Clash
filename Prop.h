@@ -3,8 +3,6 @@
 #include "raymath.h"
 #include <string>
 
-extern const int window_dimensions[2];
-
 class Prop{
 	Texture2D Texture{};
 	Vector2 World_Position{};

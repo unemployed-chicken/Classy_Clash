@@ -16,23 +16,22 @@ using std::map;
 // Window Properties 
 const int window_dimensions[2]{ 384 , 384 }; // Width * Height
 const int targetFps{ 60 };
-const bool debugging{ true };
-float world_scale{ 4.0 };
 
+// General Properties
+const bool debugging{ false };
+float world_scale{ 4.0 };
+float attacks_per_second{ 2.0f };
+constexpr long number_of_enemies{ 5 };
+
+// Methods
 map<string, Texture2D> generateTextures();
 void unloadAllTextures(map<string, Texture2D> textures);
+void displayHealth(Knight knight);
+void assignTargetToEnemies(Enemy enemies[], Knight& knight);
+bool areEnemiesPresent(Enemy enemies[]);
 
 // Debug Only
-void displayCoordinates(Vector2 map, Knight knight, Enemy goblin);
-
-/* Map Bounderies: 
-    Left: -162.5 
-    Bottom: -1714.5
-    Right: - 1841.5
-    Top: -128.5
-*/
-
-
+void displayCoordinates(Vector2 map, Knight knight, Enemy e[]);
 
 int main()
 {
@@ -45,27 +44,28 @@ int main()
     Map world_map{ textures }; // WARNING: This will create a new texture if key does not exist
     
     // Create Character:
-    Knight knight = Knight(textures["knight_idle"], textures["knight_run"], window_dimensions[0], window_dimensions[1]);
+    Knight knight = Knight(textures["knight_idle"], textures["knight_run"], textures["sword"], window_dimensions[0], window_dimensions[1]);
 
-    // Create Goblin: 
-    Enemy goblin = Enemy(textures["goblin_idle"], textures["goblin_run"], 400, 500, 3.0f);
-    goblin.setTarget(&knight);
+    Enemy enemies[number_of_enemies]{
+        Enemy(textures["goblin_idle"], textures["goblin_run"], 400.f, 500.f, 3.0f, 3.0f, "goblin_1"), // Good
+        Enemy(textures["goblin_idle"], textures["goblin_run"], 1500.f, 1500.f, 3.0f, 3.0f, "goblin_2"), // Move Right 
+        Enemy(textures["goblin_idle"], textures["goblin_run"], 1750.f, 1650.f, 3.0f, 3.0f, "goblin_3"), // Good
+        Enemy(textures["slime_idle"], textures["slime_run"], 1750.f, 200.f, 3.0f, 2.0f, "slime_1"), // Good 
+        Enemy(textures["slime_idle"], textures["slime_run"], 512.f, 1550, 3.0f, 2.0f, "slime_2") // Good
+    };
+
+    // Assign Knight as target of all enemies
+    assignTargetToEnemies(enemies, knight);
 
     // Create Contorller:
     Controller controller;
 
     while (!WindowShouldClose()) {
-        // Time since last frame
-        const float dT{ GetFrameTime() };
-
         BeginDrawing();
         ClearBackground(WHITE);
 
         controller.checkUserInput(knight, world_map);
         map_pos = Vector2Scale(knight.getWorldPos(), -1.f);
-
-        // Update Animation Frame
-        knight.animateCharacter(dT);
 
         // Draw Map
         DrawTextureEx(world_map.getTexture(), map_pos, 0, world_scale, WHITE);
@@ -73,18 +73,40 @@ int main()
         // Draw Prop
         world_map.renderAllProps(knight.getWorldPos());
 
-        // Move and Draw Goblin
-        controller.moveAiCharacter(goblin, world_map, dT);
-        
-        // Draw Character
-        knight.drawCharacter();
-
-        if (debugging) {
-            displayCoordinates(map_pos, knight, goblin);
+        if (!areEnemiesPresent(enemies)) {
+            DrawText("You Win!", window_dimensions[0] * .25, window_dimensions[1] / 2 - 25, 50, WHITE);
         }
-        
+        else if (knight.getIsAlive()) {
+            // Time since last frame
+            const float dT{ GetFrameTime() };
+
+            // Move and Draw all enemies 
+            // Small Bug: Drawing characters should occur only after damage calculation. Leaving as this isn't critical to my practice
+            controller.moveAllAiCharacters(enemies, world_map, dT, number_of_enemies);
+
+            // User Attack Phase
+            if (IsKeyPressed(KEY_F)) {
+                controller.knightAttack(knight, enemies, number_of_enemies);
+            }
+
+            // Enemies attack Phase
+            controller.enemiesAttack(enemies, number_of_enemies);
+
+            // Draw Character
+            knight.render(dT);
+            if (!debugging) {
+                displayHealth(knight);
+            }
+            else {
+                displayCoordinates(map_pos, knight, enemies);
+            }
+        }
+        else {
+            DrawText("Game Over!", window_dimensions[0] * .15 , window_dimensions[1] / 2 - 25, 50, WHITE);
+        }
 
         EndDrawing();
+
     }
 
     unloadAllTextures(textures);
@@ -98,13 +120,16 @@ map<string, Texture2D> generateTextures() {
         {"knight_run", LoadTexture("characters\\knight_run_spritesheet.png")},
         {"goblin_idle", LoadTexture("characters\\goblin_idle_spritesheet.png")},
         {"goblin_run", LoadTexture("characters\\goblin_run_spritesheet.png")},
+        {"slime_idle", LoadTexture("characters\\slime_idle_spritesheet.png")},
+        {"slime_run", LoadTexture("characters\\slime_run_spritesheet.png")},
         {"island_map", LoadTexture("nature_tileset\\world_map.png")},
         {"stump", LoadTexture("nature_tileset\\stump.png")},
         {"tree", LoadTexture("nature_tileset\\tree.png")},
         {"sign", LoadTexture("nature_tileset\\Sign.png")},
         {"challice", LoadTexture("nature_tileset\\challice.png")},
         {"bush", LoadTexture("nature_tileset\\Bush.png")},
-        {"pond",  LoadTexture("nature_tileset\\pond.png")}
+        {"pond", LoadTexture("nature_tileset\\pond.png")},
+        {"sword",  LoadTexture("characters\\weapon_sword.png")}
     };
 
     return textures;
@@ -117,45 +142,59 @@ void unloadAllTextures(map<string, Texture2D> textures) {
     }
 }
 
-void displayCoordinates(Vector2 map, Knight knight, Enemy goblin) {
-    char XbaseString[] = "Map X: ";
-    char xCoor[50];
-    sprintf_s(xCoor, "%s%f", XbaseString, map.x);
-    DrawText(xCoor, 25, 25, 25, WHITE);
+
+void displayCoordinates(Vector2 map, Knight knight, Enemy e[]) {
+    string mapXCoordinate = "Goblin X: ";
+    mapXCoordinate.append(std::to_string(e[0].getScreenPos().x));
+    DrawText(mapXCoordinate.c_str(), 25, 25, 25, WHITE);
+
+    string YbaseString = "Goblin Y: ";
+    YbaseString.append(std::to_string(e[0].getScreenPos().y));
+    DrawText(YbaseString.c_str(), 25, 50, 25, WHITE);
+
+    //char knightXCoorBase[] = "Knight X: ";
+    //char knightXCoor[50];
+    //sprintf_s(knightXCoor, "%s%f", knightXCoorBase, knight.getWorldPositionX());
+    //DrawText(knightXCoor, 25, 75, 25, WHITE);
+
+    //char knightYCoorBase[] = "Knight Y: ";
+    //char knightYCoor[50];
+    //sprintf_s(knightYCoor, "%s%f", knightYCoorBase, knight.getWorldPositionY());
+    //DrawText(knightYCoor, 25, 100, 25, WHITE);
+
+    char knightCollisionRec[] = "Knight Health: ";
+    char knightCol[50];
+    sprintf_s(knightCol, "%s%f", knightCollisionRec, knight.getHealth());
+    DrawText(knightCol, 25, 75, 25, WHITE);
+
+    string enemyCollisionX = "Enemies Exist: ";
+    enemyCollisionX.append(std::to_string(areEnemiesPresent(e)));
+    DrawText(enemyCollisionX.c_str(), 25, 100, 25, WHITE);
+
+    //string enemyCollisionY = "EnemyCollision Y: ";
+    //enemyCollisionY.append(std::to_string(map.y));
+    //DrawText(enemyCollisionY.c_str(), 25, 125, 25, WHITE);
+}
+
+void displayHealth(Knight knight) {
+    string health = "Health: ";
+    health.append(std::to_string(knight.getHealth()));
+    DrawText(health.c_str(), 25, 25, 25, WHITE);
+}
 
 
-    char YbaseString[] = "Map Y: ";
-    char yCoor[50];
-    sprintf_s(yCoor, "%s%f", YbaseString, map.y);
-    DrawText(yCoor, 25, 50, 25, WHITE);
+// Refactor: Make Enemy constructor take Knight and pass in on creation to save on extra loop
+void assignTargetToEnemies(Enemy enemies[], Knight& knight) {
+    for (int i = 0; i < number_of_enemies; ++i) {
+        enemies[i].setTarget(&knight);
+    }
+}
 
-    char knightXCoorBase[] = "Knight X: ";
-    char knightXCoor[50];
-    sprintf_s(knightXCoor, "%s%f", knightXCoorBase, knight.getWorldPositionX());
-    DrawText(knightXCoor, 25, 75, 25, WHITE);
-
-    char knightYCoorBase[] = "Knight Y: ";
-    char knightYCoor[50];
-    sprintf_s(knightYCoor, "%s%f", knightYCoorBase, knight.getWorldPositionY());
-    DrawText(knightYCoor, 25, 100, 25, WHITE);
-
-    char goblinScreenPosXBase[] = "Goblin X: ";
-    char goblinScreenX[50];
-    sprintf_s(goblinScreenX, "%s%f", goblinScreenPosXBase, goblin.getWorldPositionX());
-    DrawText(goblinScreenX, 25, 125, 25, WHITE);
-
-    char goblinScreenPosYBase[] = "Goblin Y: ";
-    char goblinScreenY[50];
-    sprintf_s(goblinScreenY, "%s%f", goblinScreenPosYBase, goblin.getWorldPositionY());
-    DrawText(goblinScreenY, 25, 150, 25, WHITE);
-
-    //char goblinScreenPosXBase[] = "Goblin Screen X: ";
-    //char goblinScreenX[50];
-    //sprintf_s(goblinScreenX, "%s%f", goblinScreenPosXBase, goblin.getScreenPos().x);
-    //DrawText(goblinScreenX, 25, 125, 25, WHITE);
-
-    //char goblinScreenPosYBase[] = "Goblin Screen Y: ";
-    //char goblinScreenY[50];
-    //sprintf_s(goblinScreenY, "%s%f", goblinScreenPosYBase, goblin.getScreenPos().y);
-    //DrawText(goblinScreenY, 25, 150, 25, WHITE);
+bool areEnemiesPresent(Enemy enemies[]) {
+    for (int i = 0; i < number_of_enemies; ++i) {
+        if (enemies[i].getIsAlive()) {
+            return true;
+        }
+    }
+    return false;
 }
