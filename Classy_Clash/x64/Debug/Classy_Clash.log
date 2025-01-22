@@ -9,15 +9,10 @@ C:\Users\jwcla\OneDrive - Clap Nation\Documents\Businesses\Unemployed Chicken\CP
 C:\Users\jwcla\OneDrive - Clap Nation\Documents\Businesses\Unemployed Chicken\CPP-Prac\Classy_Clash\Classy_Clash.cpp(47,115): warning C4244: 'argument': conversion from 'const int' to 'float', possible loss of data
 C:\Users\jwcla\OneDrive - Clap Nation\Documents\Businesses\Unemployed Chicken\CPP-Prac\Classy_Clash\Classy_Clash.cpp(77,55): warning C4244: 'argument': conversion from 'double' to 'int', possible loss of data
 C:\Users\jwcla\OneDrive - Clap Nation\Documents\Businesses\Unemployed Chicken\CPP-Prac\Classy_Clash\Classy_Clash.cpp(105,57): warning C4244: 'argument': conversion from 'double' to 'int', possible loss of data
-  Controller.cpp
-C:\Users\jwcla\OneDrive - Clap Nation\Documents\Businesses\Unemployed Chicken\CPP-Prac\Classy_Clash\Enemy.h(13,92): warning C4244: 'argument': conversion from 'const int' to 'float', possible loss of data
-  (compiling source file 'Controller.cpp')
-  
-C:\Users\jwcla\OneDrive - Clap Nation\Documents\Businesses\Unemployed Chicken\CPP-Prac\Classy_Clash\Enemy.h(13,70): warning C4244: 'argument': conversion from 'const int' to 'float', possible loss of data
-  (compiling source file 'Controller.cpp')
-  
-C:\Users\jwcla\OneDrive - Clap Nation\Documents\Businesses\Unemployed Chicken\CPP-Prac\Classy_Clash\Controller.cpp(66,108): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-  Generating Code...
+C:\Users\jwcla\OneDrive - Clap Nation\Documents\Businesses\Unemployed Chicken\CPP-Prac\Classy_Clash\Classy_Clash.cpp(194,62): warning C4838: conversion from 'int' to 'float' requires a narrowing conversion
+C:\Users\jwcla\OneDrive - Clap Nation\Documents\Businesses\Unemployed Chicken\CPP-Prac\Classy_Clash\Classy_Clash.cpp(194,62): warning C4244: 'initializing': conversion from 'int' to 'float', possible loss of data
+C:\Users\jwcla\OneDrive - Clap Nation\Documents\Businesses\Unemployed Chicken\CPP-Prac\Classy_Clash\Classy_Clash.cpp(194,84): warning C4838: conversion from 'int' to 'float' requires a narrowing conversion
+C:\Users\jwcla\OneDrive - Clap Nation\Documents\Businesses\Unemployed Chicken\CPP-Prac\Classy_Clash\Classy_Clash.cpp(194,84): warning C4244: 'initializing': conversion from 'int' to 'float', possible loss of data
   Classy_Clash.vcxproj -> C:\Users\jwcla\OneDrive - Clap Nation\Documents\Businesses\Unemployed Chicken\CPP-Prac\Classy_Clash\x64\Debug\Classy_Clash.exe
   'pwsh.exe' is not recognized as an internal or external command,
   operable program or batch file.

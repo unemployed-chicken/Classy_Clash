@@ -26,7 +26,7 @@ constexpr long number_of_enemies{ 5 };
 // Methods
 map<string, Texture2D> generateTextures();
 void unloadAllTextures(map<string, Texture2D> textures);
-void displayHealth(Knight knight);
+void displayHealth(Knight knight, Texture2D hearts);
 void assignTargetToEnemies(Enemy enemies[], Knight& knight);
 bool areEnemiesPresent(Enemy enemies[]);
 
@@ -95,7 +95,7 @@ int main()
             // Draw Character
             knight.render(dT);
             if (!debugging) {
-                displayHealth(knight);
+                displayHealth(knight, textures["health"]);
             }
             else {
                 displayCoordinates(map_pos, knight, enemies);
@@ -103,6 +103,9 @@ int main()
         }
         else {
             DrawText("Game Over!", window_dimensions[0] * .15 , window_dimensions[1] / 2 - 25, 50, WHITE);
+            if (!debugging) {
+                displayHealth(knight, textures["health"]);
+            }
         }
 
         EndDrawing();
@@ -129,7 +132,8 @@ map<string, Texture2D> generateTextures() {
         {"challice", LoadTexture("nature_tileset\\challice.png")},
         {"bush", LoadTexture("nature_tileset\\Bush.png")},
         {"pond", LoadTexture("nature_tileset\\pond.png")},
-        {"sword",  LoadTexture("characters\\weapon_sword.png")}
+        {"sword", LoadTexture("characters\\weapon_sword.png")},
+        {"health", LoadTexture("characters\\health.png")}
     };
 
     return textures;
@@ -176,10 +180,20 @@ void displayCoordinates(Vector2 map, Knight knight, Enemy e[]) {
     //DrawText(enemyCollisionY.c_str(), 25, 125, 25, WHITE);
 }
 
-void displayHealth(Knight knight) {
-    string health = "Health: ";
-    health.append(std::to_string(knight.getHealth()));
-    DrawText(health.c_str(), 25, 25, 25, WHITE);
+void displayHealth(Knight knight, Texture2D hearts) {
+    float row{}; 
+
+    if (knight.getHealth() >= 30) { row = 0.0f; }
+    else if (knight.getHealth() >= 25) { row = 1.0f; }
+    else if (knight.getHealth() >= 20) { row = 2.0f; }
+    else if (knight.getHealth() >= 15) { row = 3.0f; }
+    else if (knight.getHealth() >= 10) { row = 4.0f; }
+    else if (knight.getHealth() >= 5) { row = 5.0f; }
+    else { row = 6; }
+
+    Rectangle source{ 0.0f, (hearts.height / 7) * row, hearts.width, hearts.height / 7};
+    Rectangle dest{ 10.0f, 10.0f, hearts.width * world_scale, (hearts.height / 7) * world_scale };
+    DrawTexturePro(hearts, source, dest, Vector2{}, 0.0, WHITE);
 }
 
 
